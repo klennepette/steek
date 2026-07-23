@@ -22,6 +22,13 @@ if not exist .venv (
     python -m venv .venv
 )
 
+REM Update from git if available
+git status >nul 2>&1
+if errorlevel 0 (
+    echo Updates controleren...
+    git pull --ff-only >nul 2>&1
+)
+
 REM Install/update dependencies quietly
 echo Afhankelijkheden controleren...
 .venv\Scripts\pip install -r requirements.txt -q
@@ -31,7 +38,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM Start the app (handles update check + browser opening)
+REM Start the app
 .venv\Scripts\python run.py
 
 if errorlevel 1 (
