@@ -1,7 +1,7 @@
 [package]
 name = "steek"
 version = "0.1.0"
-description = "Steek - Borduurweelde kassa & voorraadbeheer"
+description = "Steek - Borduurweelde inventory and point-of-sale"
 authors = ["Borduurweelde"]
 edition = "2021"
 

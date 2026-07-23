@@ -9,196 +9,197 @@ export async function getDb(): Promise<Database> {
   return db;
 }
 
-// ── Types ───────────────────────────────────────────────────────────────────
+// ── Types ────────────────────────────────────────────────────────────────────
 
-export interface Categorie {
+export interface Category {
   id: number;
-  naam: string;
-  volgorde: number;
+  name: string;
+  sort_order: number;
 }
 
 export interface Product {
   id: number;
-  naam: string;
-  beschrijving: string | null;
+  name: string;
+  description: string | null;
   sku: string | null;
-  categorie_id: number | null;
-  categorie_naam?: string;
-  prijs: number;
-  btw_pct: number;
-  voorraad: number;
-  actief: number;
+  category_id: number | null;
+  category_name?: string;
+  price: number;
+  vat_pct: number;
+  stock: number;
+  active: number;
 }
 
-export interface Verkoop {
+export interface Sale {
   id: number;
-  datum: string;
-  totaal_excl: number;
-  totaal_btw: number;
-  totaal_incl: number;
-  betaalmethode: string;
-  opmerking: string | null;
+  created_at: string;
+  total_excl: number;
+  total_vat: number;
+  total_incl: number;
+  payment_method: string;
+  note: string | null;
 }
 
-export interface VerkoopRegel {
+export interface SaleLine {
   id: number;
-  verkoop_id: number;
+  sale_id: number;
   product_id: number | null;
-  product_naam: string;
-  aantal: number;
-  stukprijs: number;
-  btw_pct: number;
-  subtotaal: number;
+  product_name: string;
+  quantity: number;
+  unit_price: number;
+  vat_pct: number;
+  subtotal: number;
 }
 
-export interface Instelling {
-  sleutel: string;
-  waarde: string | null;
+export interface Setting {
+  key: string;
+  value: string | null;
 }
 
-// ── Categorieën ─────────────────────────────────────────────────────────────
+// ── Categories ───────────────────────────────────────────────────────────────
 
-export async function getCategorieen(): Promise<Categorie[]> {
+export async function getCategories(): Promise<Category[]> {
   const db = await getDb();
-  return db.select<Categorie[]>("SELECT * FROM categorieen ORDER BY volgorde, naam");
+  return db.select<Category[]>("SELECT * FROM categories ORDER BY sort_order, name");
 }
 
-// ── Producten ────────────────────────────────────────────────────────────────
+// ── Products ─────────────────────────────────────────────────────────────────
 
-export async function getProducten(alleenActief = true): Promise<Product[]> {
+export async function getProducts(activeOnly = true): Promise<Product[]> {
   const db = await getDb();
-  const filter = alleenActief ? "WHERE p.actief = 1" : "";
+  const filter = activeOnly ? "WHERE p.active = 1" : "";
   return db.select<Product[]>(`
-    SELECT p.*, c.naam AS categorie_naam
-    FROM producten p
-    LEFT JOIN categorieen c ON c.id = p.categorie_id
+    SELECT p.*, c.name AS category_name
+    FROM products p
+    LEFT JOIN categories c ON c.id = p.category_id
     ${filter}
-    ORDER BY c.volgorde, p.naam
+    ORDER BY c.sort_order, p.name
   `);
 }
 
-export async function upsertProduct(p: Omit<Product, "id" | "categorie_naam"> & { id?: number }): Promise<void> {
+export async function upsertProduct(
+  p: Omit<Product, "id" | "category_name"> & { id?: number }
+): Promise<void> {
   const db = await getDb();
   if (p.id) {
     await db.execute(
-      `UPDATE producten SET naam=?, beschrijving=?, sku=?, categorie_id=?, prijs=?, btw_pct=?,
-       voorraad=?, actief=?, bijgewerkt=datetime('now') WHERE id=?`,
-      [p.naam, p.beschrijving, p.sku, p.categorie_id, p.prijs, p.btw_pct, p.voorraad, p.actief, p.id]
+      `UPDATE products SET name=?, description=?, sku=?, category_id=?, price=?, vat_pct=?,
+       stock=?, active=?, updated_at=datetime('now') WHERE id=?`,
+      [p.name, p.description, p.sku, p.category_id, p.price, p.vat_pct, p.stock, p.active, p.id]
     );
   } else {
     await db.execute(
-      `INSERT INTO producten (naam, beschrijving, sku, categorie_id, prijs, btw_pct, voorraad, actief)
+      `INSERT INTO products (name, description, sku, category_id, price, vat_pct, stock, active)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [p.naam, p.beschrijving, p.sku, p.categorie_id, p.prijs, p.btw_pct, p.voorraad, p.actief ?? 1]
+      [p.name, p.description, p.sku, p.category_id, p.price, p.vat_pct, p.stock, p.active ?? 1]
     );
   }
 }
 
-export async function verwijderProduct(id: number): Promise<void> {
+export async function deactivateProduct(id: number): Promise<void> {
   const db = await getDb();
-  await db.execute("UPDATE producten SET actief=0 WHERE id=?", [id]);
+  await db.execute("UPDATE products SET active=0 WHERE id=?", [id]);
 }
 
-export async function updateVoorraad(id: number, delta: number): Promise<void> {
+export async function adjustStock(id: number, delta: number): Promise<void> {
   const db = await getDb();
   await db.execute(
-    "UPDATE producten SET voorraad = MAX(0, voorraad + ?), bijgewerkt=datetime('now') WHERE id=?",
+    "UPDATE products SET stock = MAX(0, stock + ?), updated_at=datetime('now') WHERE id=?",
     [delta, id]
   );
 }
 
-// ── Verkopen ─────────────────────────────────────────────────────────────────
+// ── Sales ────────────────────────────────────────────────────────────────────
 
-export interface NieuweVerkoop {
-  betaalmethode: string;
-  opmerking?: string;
-  regels: {
+export interface NewSale {
+  payment_method: string;
+  note?: string;
+  lines: {
     product_id: number | null;
-    product_naam: string;
-    aantal: number;
-    stukprijs: number;
-    btw_pct: number;
+    product_name: string;
+    quantity: number;
+    unit_price: number;
+    vat_pct: number;
   }[];
 }
 
-export async function slaVerkoopOp(verkoop: NieuweVerkoop): Promise<number> {
+export async function recordSale(sale: NewSale): Promise<number> {
   const db = await getDb();
 
-  const totaal_incl = verkoop.regels.reduce((s, r) => s + r.aantal * r.stukprijs, 0);
-  const totaal_excl = verkoop.regels.reduce((s, r) => {
-    const excl = r.stukprijs / (1 + r.btw_pct / 100);
-    return s + r.aantal * excl;
+  const total_incl = sale.lines.reduce((s, l) => s + l.quantity * l.unit_price, 0);
+  const total_excl = sale.lines.reduce((s, l) => {
+    const excl = l.unit_price / (1 + l.vat_pct / 100);
+    return s + l.quantity * excl;
   }, 0);
-  const totaal_btw = totaal_incl - totaal_excl;
+  const total_vat = total_incl - total_excl;
 
   const result = await db.execute(
-    `INSERT INTO verkopen (totaal_excl, totaal_btw, totaal_incl, betaalmethode, opmerking)
+    `INSERT INTO sales (total_excl, total_vat, total_incl, payment_method, note)
      VALUES (?, ?, ?, ?, ?)`,
-    [totaal_excl, totaal_btw, totaal_incl, verkoop.betaalmethode, verkoop.opmerking ?? null]
+    [total_excl, total_vat, total_incl, sale.payment_method, sale.note ?? null]
   );
 
-  const verkoopId = result.lastInsertId as number;
+  const saleId = result.lastInsertId as number;
 
-  for (const r of verkoop.regels) {
-    const subtotaal = r.aantal * r.stukprijs;
+  for (const l of sale.lines) {
+    const subtotal = l.quantity * l.unit_price;
     await db.execute(
-      `INSERT INTO verkoop_regels (verkoop_id, product_id, product_naam, aantal, stukprijs, btw_pct, subtotaal)
+      `INSERT INTO sale_lines (sale_id, product_id, product_name, quantity, unit_price, vat_pct, subtotal)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [verkoopId, r.product_id, r.product_naam, r.aantal, r.stukprijs, r.btw_pct, subtotaal]
+      [saleId, l.product_id, l.product_name, l.quantity, l.unit_price, l.vat_pct, subtotal]
     );
-    // Update voorraad
-    if (r.product_id) {
+    if (l.product_id) {
       await db.execute(
-        "UPDATE producten SET voorraad = MAX(0, voorraad - ?), bijgewerkt=datetime('now') WHERE id=?",
-        [r.aantal, r.product_id]
+        "UPDATE products SET stock = MAX(0, stock - ?), updated_at=datetime('now') WHERE id=?",
+        [l.quantity, l.product_id]
       );
     }
   }
 
-  return verkoopId;
+  return saleId;
 }
 
-export async function getVerkopen(van?: string, tot?: string): Promise<Verkoop[]> {
+export async function getSales(from?: string, to?: string): Promise<Sale[]> {
   const db = await getDb();
-  let sql = "SELECT * FROM verkopen";
+  let sql = "SELECT * FROM sales";
   const params: string[] = [];
-  if (van && tot) {
-    sql += " WHERE datum BETWEEN ? AND ?";
-    params.push(van, tot);
+  if (from && to) {
+    sql += " WHERE created_at BETWEEN ? AND ?";
+    params.push(from, to);
   }
-  sql += " ORDER BY datum DESC";
-  return db.select<Verkoop[]>(sql, params);
+  sql += " ORDER BY created_at DESC";
+  return db.select<Sale[]>(sql, params);
 }
 
-export async function getVerkoopRegels(verkoopId: number): Promise<VerkoopRegel[]> {
+export async function getSaleLines(saleId: number): Promise<SaleLine[]> {
   const db = await getDb();
-  return db.select<VerkoopRegel[]>(
-    "SELECT * FROM verkoop_regels WHERE verkoop_id = ?",
-    [verkoopId]
+  return db.select<SaleLine[]>(
+    "SELECT * FROM sale_lines WHERE sale_id = ?",
+    [saleId]
   );
 }
 
-// ── Instellingen ─────────────────────────────────────────────────────────────
+// ── Settings ─────────────────────────────────────────────────────────────────
 
-export async function getInstelling(sleutel: string): Promise<string | null> {
+export async function getSetting(key: string): Promise<string | null> {
   const db = await getDb();
-  const rows = await db.select<Instelling[]>(
-    "SELECT waarde FROM instellingen WHERE sleutel = ?",
-    [sleutel]
+  const rows = await db.select<Setting[]>(
+    "SELECT value FROM settings WHERE key = ?",
+    [key]
   );
-  return rows[0]?.waarde ?? null;
+  return rows[0]?.value ?? null;
 }
 
-export async function setInstelling(sleutel: string, waarde: string): Promise<void> {
+export async function setSetting(key: string, value: string): Promise<void> {
   const db = await getDb();
   await db.execute(
-    "INSERT OR REPLACE INTO instellingen (sleutel, waarde) VALUES (?, ?)",
-    [sleutel, waarde]
+    "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+    [key, value]
   );
 }
 
-export async function getAlleInstellingen(): Promise<Record<string, string>> {
+export async function getAllSettings(): Promise<Record<string, string>> {
   const db = await getDb();
-  const rows = await db.select<Instelling[]>("SELECT sleutel, waarde FROM instellingen");
-  return Object.fromEntries(rows.map((r) => [r.sleutel, r.waarde ?? ""]));
+  const rows = await db.select<Setting[]>("SELECT key, value FROM settings");
+  return Object.fromEntries(rows.map((r) => [r.key, r.value ?? ""]));
 }

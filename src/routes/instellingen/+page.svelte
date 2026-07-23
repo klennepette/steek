@@ -1,28 +1,28 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getAlleInstellingen, setInstelling } from "$lib/db";
+  import { getAllSettings, setSetting } from "$lib/db";
   import { relaunch } from "@tauri-apps/plugin-process";
   import { check } from "@tauri-apps/plugin-updater";
 
-  let instellingen: Record<string, string> = {};
-  let opgeslagen = false;
-  let updateBezig = false;
+  let settings: Record<string, string> = {};
+  let saved = false;
+  let checkingUpdate = false;
   let updateStatus = "";
 
   onMount(async () => {
-    instellingen = await getAlleInstellingen();
+    settings = await getAllSettings();
   });
 
-  async function slaOp() {
-    for (const [sleutel, waarde] of Object.entries(instellingen)) {
-      await setInstelling(sleutel, waarde);
+  async function save() {
+    for (const [key, value] of Object.entries(settings)) {
+      await setSetting(key, value);
     }
-    opgeslagen = true;
-    setTimeout(() => (opgeslagen = false), 2500);
+    saved = true;
+    setTimeout(() => (saved = false), 2500);
   }
 
-  async function checkUpdate() {
-    updateBezig = true;
+  async function checkForUpdate() {
+    checkingUpdate = true;
     updateStatus = "Bezig met controleren...";
     try {
       const update = await check();
@@ -38,30 +38,30 @@
     } catch (e) {
       updateStatus = `Fout: ${e}`;
     } finally {
-      updateBezig = false;
+      checkingUpdate = false;
     }
   }
 
-  const velden = [
-    { sleutel: "winkel_naam",   label: "Winkelnaam",     type: "text" },
-    { sleutel: "btw_nummer",    label: "BTW-nummer",     type: "text" },
-    { sleutel: "standaard_btw", label: "Standaard BTW %",type: "number" },
-    { sleutel: "printer_naam",  label: "Printernaam",    type: "text" },
+  const fields = [
+    { key: "shop_name",   label: "Winkelnaam",     type: "text" },
+    { key: "vat_number",  label: "BTW-nummer",     type: "text" },
+    { key: "default_vat", label: "Standaard BTW %", type: "number" },
+    { key: "printer_name",label: "Printernaam",    type: "text" },
   ];
 </script>
 
 <div class="max-w-xl flex flex-col gap-6">
   <h2 class="text-xl font-semibold">Instellingen</h2>
 
-  <!-- Algemeen -->
+  <!-- General -->
   <section class="border border-border rounded-lg p-5 flex flex-col gap-4">
     <h3 class="font-medium text-base">Algemeen</h3>
-    {#each velden as veld}
+    {#each fields as field}
       <label class="flex flex-col gap-1 text-sm">
-        {veld.label}
+        {field.label}
         <input
-          type={veld.type}
-          bind:value={instellingen[veld.sleutel]}
+          type={field.type}
+          bind:value={settings[field.key]}
           class="border border-input rounded-md px-3 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </label>
@@ -69,11 +69,11 @@
     <div class="flex items-center gap-3 pt-1">
       <button
         class="bg-primary text-primary-foreground rounded-md px-4 py-1.5 text-sm font-medium hover:opacity-90"
-        onclick={slaOp}
+        onclick={save}
       >
         Opslaan
       </button>
-      {#if opgeslagen}
+      {#if saved}
         <span class="text-green-700 text-sm">Opgeslagen!</span>
       {/if}
     </div>
@@ -88,10 +88,10 @@
     <div class="flex items-center gap-3">
       <button
         class="bg-secondary text-secondary-foreground rounded-md px-4 py-1.5 text-sm font-medium hover:opacity-90 disabled:opacity-50"
-        disabled={updateBezig}
-        onclick={checkUpdate}
+        disabled={checkingUpdate}
+        onclick={checkForUpdate}
       >
-        {updateBezig ? "Bezig..." : "Controleer op updates"}
+        {checkingUpdate ? "Bezig..." : "Controleer op updates"}
       </button>
       {#if updateStatus}
         <span class="text-sm text-muted-foreground">{updateStatus}</span>
@@ -99,7 +99,7 @@
     </div>
   </section>
 
-  <!-- Info -->
+  <!-- About -->
   <section class="border border-border rounded-lg p-5 text-sm text-muted-foreground flex flex-col gap-1">
     <p><strong>Steek</strong> v0.1.0</p>
     <p>Borduurweelde — Turnhout, België</p>

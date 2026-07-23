@@ -2,23 +2,23 @@
   import "../app.css";
   import { page } from "$app/stores";
 
-  const nav = [
-    { href: "/kassa",       label: "Kassa",      icon: "🛒" },
-    { href: "/voorraad",    label: "Voorraad",   icon: "📦" },
-    { href: "/verkopen",    label: "Verkopen",   icon: "📊" },
-    { href: "/instellingen",label: "Instellingen",icon: "⚙️" },
+  const navItems = [
+    { href: "/kassa",        label: "Kassa",       icon: "🛒" },
+    { href: "/voorraad",     label: "Voorraad",    icon: "📦" },
+    { href: "/verkopen",     label: "Verkopen",    icon: "📊" },
+    { href: "/instellingen", label: "Instellingen",icon: "⚙️" },
   ];
 </script>
 
 <div class="flex h-screen overflow-hidden bg-background">
-  <!-- Zijbalk -->
+  <!-- Sidebar -->
   <nav class="flex flex-col w-52 bg-sidebar border-r border-sidebar-border shadow-sm shrink-0">
     <div class="px-4 py-5 border-b border-sidebar-border">
       <h1 class="text-lg font-bold text-sidebar-primary tracking-tight">Steek</h1>
       <p class="text-xs text-muted-foreground">Borduurweelde</p>
     </div>
     <ul class="flex flex-col gap-1 p-3 flex-1">
-      {#each nav as item}
+      {#each navItems as item}
         {@const active = $page.url.pathname.startsWith(item.href)}
         <li>
           <a
@@ -39,7 +39,7 @@
     </div>
   </nav>
 
-  <!-- Hoofdinhoud -->
+  <!-- Main content -->
   <main class="flex-1 overflow-y-auto p-6">
     <slot />
   </main>

@@ -4,7 +4,7 @@ use tauri_plugin_sql::{Migration, MigrationKind};
 pub fn run() {
     let migrations = vec![Migration {
         version: 1,
-        description: "initieel schema",
+        description: "initial schema",
         sql: include_str!("../migrations/001_init.sql"),
         kind: MigrationKind::Up,
     }];
@@ -19,5 +19,5 @@ pub fn run() {
                 .build(),
         )
         .run(tauri::generate_context!())
-        .expect("fout bij starten van applicatie");
+        .expect("error while running steek");
 }

@@ -1,64 +1,64 @@
--- Categorieën
-CREATE TABLE IF NOT EXISTS categorieen (
-    id        INTEGER PRIMARY KEY AUTOINCREMENT,
-    naam      TEXT    NOT NULL UNIQUE,
-    volgorde  INTEGER NOT NULL DEFAULT 0
+-- Categories
+CREATE TABLE IF NOT EXISTS categories (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    name        TEXT    NOT NULL UNIQUE,
+    sort_order  INTEGER NOT NULL DEFAULT 0
 );
 
--- Producten
-CREATE TABLE IF NOT EXISTS producten (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    naam          TEXT    NOT NULL,
-    beschrijving  TEXT,
-    sku           TEXT    UNIQUE,
-    categorie_id  INTEGER REFERENCES categorieen(id) ON DELETE SET NULL,
-    prijs         REAL    NOT NULL DEFAULT 0,
-    btw_pct       REAL    NOT NULL DEFAULT 6,   -- 6% voor meeste hobbyartikelen
-    voorraad      INTEGER NOT NULL DEFAULT 0,
-    actief        INTEGER NOT NULL DEFAULT 1,    -- boolean: 1=actief, 0=inactief
-    aangemaakt    TEXT    NOT NULL DEFAULT (datetime('now')),
-    bijgewerkt    TEXT    NOT NULL DEFAULT (datetime('now'))
-);
-
--- Verkooptransacties (één rij per afrekening)
-CREATE TABLE IF NOT EXISTS verkopen (
-    id             INTEGER PRIMARY KEY AUTOINCREMENT,
-    datum          TEXT    NOT NULL DEFAULT (datetime('now')),
-    totaal_excl    REAL    NOT NULL DEFAULT 0,
-    totaal_btw     REAL    NOT NULL DEFAULT 0,
-    totaal_incl    REAL    NOT NULL DEFAULT 0,
-    betaalmethode  TEXT    NOT NULL DEFAULT 'contant',  -- contant | payconiq | gemengd
-    opmerking      TEXT
-);
-
--- Verkoopregels (één rij per product per verkoop)
-CREATE TABLE IF NOT EXISTS verkoop_regels (
+-- Products
+CREATE TABLE IF NOT EXISTS products (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    verkoop_id   INTEGER NOT NULL REFERENCES verkopen(id) ON DELETE CASCADE,
-    product_id   INTEGER REFERENCES producten(id) ON DELETE SET NULL,
-    product_naam TEXT    NOT NULL,   -- snapshot van naam op moment van verkoop
-    aantal       INTEGER NOT NULL DEFAULT 1,
-    stukprijs    REAL    NOT NULL,   -- incl. BTW
-    btw_pct      REAL    NOT NULL DEFAULT 6,
-    subtotaal    REAL    NOT NULL    -- aantal * stukprijs
+    name         TEXT    NOT NULL,
+    description  TEXT,
+    sku          TEXT    UNIQUE,
+    category_id  INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+    price        REAL    NOT NULL DEFAULT 0,      -- incl. VAT
+    vat_pct      REAL    NOT NULL DEFAULT 6,      -- 6% for most hobby goods in BE
+    stock        INTEGER NOT NULL DEFAULT 0,
+    active       INTEGER NOT NULL DEFAULT 1,      -- boolean: 1=active, 0=inactive
+    created_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+    updated_at   TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
--- Instellingen (sleutel/waarde)
-CREATE TABLE IF NOT EXISTS instellingen (
-    sleutel TEXT PRIMARY KEY,
-    waarde  TEXT
+-- Sales (one row per checkout)
+CREATE TABLE IF NOT EXISTS sales (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
+    total_excl      REAL    NOT NULL DEFAULT 0,
+    total_vat       REAL    NOT NULL DEFAULT 0,
+    total_incl      REAL    NOT NULL DEFAULT 0,
+    payment_method  TEXT    NOT NULL DEFAULT 'cash',  -- cash | payconiq | mixed
+    note            TEXT
 );
 
--- Standaard instellingen
-INSERT OR IGNORE INTO instellingen (sleutel, waarde) VALUES
-    ('winkel_naam',     'Borduurweelde'),
-    ('btw_nummer',      ''),
-    ('standaard_btw',   '6'),
+-- Sale lines (one row per product per sale)
+CREATE TABLE IF NOT EXISTS sale_lines (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    sale_id       INTEGER NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
+    product_id    INTEGER REFERENCES products(id) ON DELETE SET NULL,
+    product_name  TEXT    NOT NULL,   -- snapshot of name at time of sale
+    quantity      INTEGER NOT NULL DEFAULT 1,
+    unit_price    REAL    NOT NULL,   -- incl. VAT
+    vat_pct       REAL    NOT NULL DEFAULT 6,
+    subtotal      REAL    NOT NULL    -- quantity * unit_price
+);
+
+-- Settings (key/value store)
+CREATE TABLE IF NOT EXISTS settings (
+    key    TEXT PRIMARY KEY,
+    value  TEXT
+);
+
+-- Default settings
+INSERT OR IGNORE INTO settings (key, value) VALUES
+    ('shop_name',       'Borduurweelde'),
+    ('vat_number',      ''),
+    ('default_vat',     '6'),
     ('update_url',      ''),
-    ('printer_naam',    '');
+    ('printer_name',    '');
 
--- Standaard categorieën
-INSERT OR IGNORE INTO categorieen (naam, volgorde) VALUES
+-- Default categories
+INSERT OR IGNORE INTO categories (name, sort_order) VALUES
     ('Borduurpakketten',   1),
     ('Haakpakketten',      2),
     ('Wol & haakkatoen',   3),

@@ -1,136 +1,135 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getProducten, slaVerkoopOp, type Product } from "$lib/db";
+  import { getProducts, recordSale, type Product } from "$lib/db";
 
-  let producten: Product[] = [];
-  let zoekterm = "";
-  let mandje: { product: Product; aantal: number }[] = [];
-  let betaalmethode = "contant";
-  let opmerking = "";
-  let bezig = false;
-  let bevestigd = false;
+  let products: Product[] = [];
+  let searchTerm = "";
+  let cartItems: { product: Product; quantity: number }[] = [];
+  let paymentMethod = "cash";
+  let note = "";
+  let loading = false;
+  let confirmed = false;
 
-  $: gefilterd = producten.filter(
+  $: filtered = products.filter(
     (p) =>
-      p.naam.toLowerCase().includes(zoekterm.toLowerCase()) ||
-      (p.sku ?? "").toLowerCase().includes(zoekterm.toLowerCase())
+      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.sku ?? "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  $: totaal = mandje.reduce((s, r) => s + r.aantal * r.product.prijs, 0);
+  $: total = cartItems.reduce((sum, item) => sum + item.quantity * item.product.price, 0);
 
   onMount(async () => {
-    producten = await getProducten(true);
+    products = await getProducts(true);
   });
 
-  function voegToe(product: Product) {
-    const bestaand = mandje.find((r) => r.product.id === product.id);
-    if (bestaand) {
-      bestaand.aantal++;
-      mandje = [...mandje];
+  function addToCart(product: Product) {
+    const existing = cartItems.find((item) => item.product.id === product.id);
+    if (existing) {
+      existing.quantity++;
+      cartItems = [...cartItems];
     } else {
-      mandje = [...mandje, { product, aantal: 1 }];
+      cartItems = [...cartItems, { product, quantity: 1 }];
     }
   }
 
-  function verwijderRegel(index: number) {
-    mandje = mandje.filter((_, i) => i !== index);
+  function removeFromCart(index: number) {
+    cartItems = cartItems.filter((_, i) => i !== index);
   }
 
-  function wijzigAantal(index: number, delta: number) {
-    mandje[index].aantal = Math.max(1, mandje[index].aantal + delta);
-    mandje = [...mandje];
+  function changeQuantity(index: number, delta: number) {
+    cartItems[index].quantity = Math.max(1, cartItems[index].quantity + delta);
+    cartItems = [...cartItems];
   }
 
-  async function afrekenen() {
-    if (mandje.length === 0) return;
-    bezig = true;
+  async function checkout() {
+    if (cartItems.length === 0) return;
+    loading = true;
     try {
-      await slaVerkoopOp({
-        betaalmethode,
-        opmerking: opmerking || undefined,
-        regels: mandje.map((r) => ({
-          product_id: r.product.id,
-          product_naam: r.product.naam,
-          aantal: r.aantal,
-          stukprijs: r.product.prijs,
-          btw_pct: r.product.btw_pct,
+      await recordSale({
+        payment_method: paymentMethod,
+        note: note || undefined,
+        lines: cartItems.map((item) => ({
+          product_id: item.product.id,
+          product_name: item.product.name,
+          quantity: item.quantity,
+          unit_price: item.product.price,
+          vat_pct: item.product.vat_pct,
         })),
       });
-      bevestigd = true;
-      setTimeout(() => {
-        mandje = [];
-        opmerking = "";
-        betaalmethode = "contant";
-        bevestigd = false;
-        producten = [];
-        getProducten(true).then((p) => (producten = p));
+      confirmed = true;
+      setTimeout(async () => {
+        cartItems = [];
+        note = "";
+        paymentMethod = "cash";
+        confirmed = false;
+        products = await getProducts(true);
       }, 2000);
     } finally {
-      bezig = false;
+      loading = false;
     }
   }
 
-  function formatPrijs(prijs: number) {
-    return new Intl.NumberFormat("nl-BE", { style: "currency", currency: "EUR" }).format(prijs);
+  function formatPrice(price: number) {
+    return new Intl.NumberFormat("nl-BE", { style: "currency", currency: "EUR" }).format(price);
   }
 </script>
 
 <div class="flex gap-6 h-full">
-  <!-- Productoverzicht -->
+  <!-- Product grid -->
   <div class="flex-1 flex flex-col gap-4">
     <div class="flex items-center gap-3">
       <h2 class="text-xl font-semibold">Kassa</h2>
       <input
         type="search"
-        bind:value={zoekterm}
+        bind:value={searchTerm}
         placeholder="Zoek op naam of SKU..."
         class="ml-auto border border-input rounded-md px-3 py-1.5 text-sm bg-background w-64 focus:outline-none focus:ring-2 focus:ring-ring"
       />
     </div>
 
     <div class="grid grid-cols-2 xl:grid-cols-3 gap-3 overflow-y-auto">
-      {#each gefilterd as product}
+      {#each filtered as product}
         <button
           class="text-left border border-border rounded-lg p-3 bg-card hover:bg-accent hover:border-ring transition-colors shadow-sm"
-          onclick={() => voegToe(product)}
+          onclick={() => addToCart(product)}
         >
-          <div class="font-medium text-sm leading-tight">{product.naam}</div>
+          <div class="font-medium text-sm leading-tight">{product.name}</div>
           {#if product.sku}
             <div class="text-xs text-muted-foreground mt-0.5">{product.sku}</div>
           {/if}
           <div class="mt-2 flex items-center justify-between">
-            <span class="font-bold text-primary">{formatPrijs(product.prijs)}</span>
-            <span class="text-xs text-muted-foreground">voorraad: {product.voorraad}</span>
+            <span class="font-bold text-primary">{formatPrice(product.price)}</span>
+            <span class="text-xs text-muted-foreground">voorraad: {product.stock}</span>
           </div>
         </button>
       {/each}
-      {#if gefilterd.length === 0}
+      {#if filtered.length === 0}
         <p class="col-span-3 text-muted-foreground text-sm py-8 text-center">Geen producten gevonden.</p>
       {/if}
     </div>
   </div>
 
-  <!-- Mandje & Afrekenen -->
+  <!-- Cart & checkout -->
   <div class="w-80 flex flex-col gap-4 shrink-0">
     <h2 class="text-xl font-semibold">Winkelmandje</h2>
 
     <div class="flex-1 overflow-y-auto flex flex-col gap-2">
-      {#each mandje as regel, i}
+      {#each cartItems as item, i}
         <div class="flex items-center gap-2 border border-border rounded-md p-2 bg-card text-sm">
           <div class="flex-1 min-w-0">
-            <div class="font-medium truncate">{regel.product.naam}</div>
-            <div class="text-muted-foreground text-xs">{formatPrijs(regel.product.prijs)} / stuk</div>
+            <div class="font-medium truncate">{item.product.name}</div>
+            <div class="text-muted-foreground text-xs">{formatPrice(item.product.price)} / stuk</div>
           </div>
           <div class="flex items-center gap-1">
-            <button class="w-6 h-6 rounded border border-border text-center" onclick={() => wijzigAantal(i, -1)}>−</button>
-            <span class="w-6 text-center">{regel.aantal}</span>
-            <button class="w-6 h-6 rounded border border-border text-center" onclick={() => wijzigAantal(i, 1)}>+</button>
+            <button class="w-6 h-6 rounded border border-border text-center" onclick={() => changeQuantity(i, -1)}>−</button>
+            <span class="w-6 text-center">{item.quantity}</span>
+            <button class="w-6 h-6 rounded border border-border text-center" onclick={() => changeQuantity(i, 1)}>+</button>
           </div>
-          <div class="w-16 text-right font-medium">{formatPrijs(regel.aantal * regel.product.prijs)}</div>
-          <button class="text-muted-foreground hover:text-destructive ml-1" onclick={() => verwijderRegel(i)}>✕</button>
+          <div class="w-16 text-right font-medium">{formatPrice(item.quantity * item.product.price)}</div>
+          <button class="text-muted-foreground hover:text-destructive ml-1" onclick={() => removeFromCart(i)}>✕</button>
         </div>
       {/each}
-      {#if mandje.length === 0}
+      {#if cartItems.length === 0}
         <p class="text-muted-foreground text-sm text-center py-8">Mandje is leeg.</p>
       {/if}
     </div>
@@ -138,26 +137,26 @@
     <div class="border-t border-border pt-4 flex flex-col gap-3">
       <div class="flex justify-between font-bold text-lg">
         <span>Totaal</span>
-        <span>{formatPrijs(totaal)}</span>
+        <span>{formatPrice(total)}</span>
       </div>
 
       <select
-        bind:value={betaalmethode}
+        bind:value={paymentMethod}
         class="border border-input rounded-md px-3 py-1.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
       >
-        <option value="contant">Contant</option>
+        <option value="cash">Contant</option>
         <option value="payconiq">Payconiq</option>
-        <option value="gemengd">Gemengd</option>
+        <option value="mixed">Gemengd</option>
       </select>
 
       <input
         type="text"
-        bind:value={opmerking}
+        bind:value={note}
         placeholder="Opmerking (optioneel)"
         class="border border-input rounded-md px-3 py-1.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
       />
 
-      {#if bevestigd}
+      {#if confirmed}
         <div class="bg-green-50 border border-green-200 text-green-800 rounded-md px-4 py-3 text-center font-medium">
           Verkoop geregistreerd!
         </div>
@@ -165,10 +164,10 @@
         <button
           class="bg-primary text-primary-foreground rounded-md px-4 py-3 font-semibold text-sm
             hover:opacity-90 disabled:opacity-50 transition-opacity"
-          disabled={mandje.length === 0 || bezig}
-          onclick={afrekenen}
+          disabled={cartItems.length === 0 || loading}
+          onclick={checkout}
         >
-          {bezig ? "Bezig..." : "Afrekenen"}
+          {loading ? "Bezig..." : "Afrekenen"}
         </button>
       {/if}
     </div>
