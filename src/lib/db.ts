@@ -20,14 +20,16 @@ export interface Category {
 export interface Product {
   id: number;
   name: string;
+  barcode: string | null;
+  packetcode: string | null;
   description: string | null;
-  sku: string | null;
   category_id: number | null;
   category_name?: string;
   price: number;
   vat_pct: number;
   stock: number;
-  active: number;
+  consignation: number; // boolean: 1 = consignment stock
+  active: number;       // boolean: 1 = active
 }
 
 export interface Sale {
@@ -77,21 +79,54 @@ export async function getProducts(activeOnly = true): Promise<Product[]> {
   `);
 }
 
+/**
+ * Search products by barcode, packetcode, or name (case-insensitive).
+ * Used by the checkout scanner input.
+ */
+export async function searchProducts(query: string): Promise<Product[]> {
+  const db = await getDb();
+  return db.select<Product[]>(
+    `SELECT p.*, c.name AS category_name
+     FROM products p
+     LEFT JOIN categories c ON c.id = p.category_id
+     WHERE p.active = 1
+       AND (p.barcode = ?1 OR p.packetcode = ?1 OR p.name LIKE ?2)
+     ORDER BY
+       CASE WHEN p.barcode = ?1 THEN 0
+            WHEN p.packetcode = ?1 THEN 1
+            ELSE 2 END,
+       p.name
+     LIMIT 20`,
+    [query, `%${query}%`]
+  );
+}
+
 export async function upsertProduct(
   p: Omit<Product, "id" | "category_name"> & { id?: number }
 ): Promise<void> {
   const db = await getDb();
   if (p.id) {
     await db.execute(
-      `UPDATE products SET name=?, description=?, sku=?, category_id=?, price=?, vat_pct=?,
-       stock=?, active=?, updated_at=datetime('now') WHERE id=?`,
-      [p.name, p.description, p.sku, p.category_id, p.price, p.vat_pct, p.stock, p.active, p.id]
+      `UPDATE products
+       SET name=?, barcode=?, packetcode=?, description=?, category_id=?,
+           price=?, vat_pct=?, stock=?, consignation=?, active=?,
+           updated_at=datetime('now')
+       WHERE id=?`,
+      [
+        p.name, p.barcode, p.packetcode, p.description, p.category_id,
+        p.price, p.vat_pct, p.stock, p.consignation, p.active,
+        p.id,
+      ]
     );
   } else {
     await db.execute(
-      `INSERT INTO products (name, description, sku, category_id, price, vat_pct, stock, active)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [p.name, p.description, p.sku, p.category_id, p.price, p.vat_pct, p.stock, p.active ?? 1]
+      `INSERT INTO products
+         (name, barcode, packetcode, description, category_id, price, vat_pct, stock, consignation, active)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        p.name, p.barcode, p.packetcode, p.description, p.category_id,
+        p.price, p.vat_pct, p.stock, p.consignation ?? 0, p.active ?? 1,
+      ]
     );
   }
 }
@@ -173,20 +208,14 @@ export async function getSales(from?: string, to?: string): Promise<Sale[]> {
 
 export async function getSaleLines(saleId: number): Promise<SaleLine[]> {
   const db = await getDb();
-  return db.select<SaleLine[]>(
-    "SELECT * FROM sale_lines WHERE sale_id = ?",
-    [saleId]
-  );
+  return db.select<SaleLine[]>("SELECT * FROM sale_lines WHERE sale_id = ?", [saleId]);
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────────
 
 export async function getSetting(key: string): Promise<string | null> {
   const db = await getDb();
-  const rows = await db.select<Setting[]>(
-    "SELECT value FROM settings WHERE key = ?",
-    [key]
-  );
+  const rows = await db.select<Setting[]>("SELECT value FROM settings WHERE key = ?", [key]);
   return rows[0]?.value ?? null;
 }
 

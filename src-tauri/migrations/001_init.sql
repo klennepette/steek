@@ -7,18 +7,24 @@ CREATE TABLE IF NOT EXISTS categories (
 
 -- Products
 CREATE TABLE IF NOT EXISTS products (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    name         TEXT    NOT NULL,
-    description  TEXT,
-    sku          TEXT    UNIQUE,
-    category_id  INTEGER REFERENCES categories(id) ON DELETE SET NULL,
-    price        REAL    NOT NULL DEFAULT 0,      -- incl. VAT
-    vat_pct      REAL    NOT NULL DEFAULT 6,      -- 6% for most hobby goods in BE
-    stock        INTEGER NOT NULL DEFAULT 0,
-    active       INTEGER NOT NULL DEFAULT 1,      -- boolean: 1=active, 0=inactive
-    created_at   TEXT    NOT NULL DEFAULT (datetime('now')),
-    updated_at   TEXT    NOT NULL DEFAULT (datetime('now'))
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    name          TEXT    NOT NULL,
+    barcode       TEXT    UNIQUE,
+    packetcode    TEXT    UNIQUE,
+    description   TEXT,
+    category_id   INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+    price         REAL    NOT NULL DEFAULT 0,      -- incl. VAT
+    vat_pct       REAL    NOT NULL DEFAULT 6,      -- 6% for most hobby goods in BE
+    stock         INTEGER NOT NULL DEFAULT 0,
+    consignation  INTEGER NOT NULL DEFAULT 0,      -- boolean: 1=consignment stock
+    active        INTEGER NOT NULL DEFAULT 1,      -- boolean: 1=active, 0=inactive
+    created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+    updated_at    TEXT    NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Index for fast barcode/packetcode lookups (scanner use-case)
+CREATE INDEX IF NOT EXISTS idx_products_barcode    ON products(barcode);
+CREATE INDEX IF NOT EXISTS idx_products_packetcode ON products(packetcode);
 
 -- Sales (one row per checkout)
 CREATE TABLE IF NOT EXISTS sales (
@@ -51,11 +57,11 @@ CREATE TABLE IF NOT EXISTS settings (
 
 -- Default settings
 INSERT OR IGNORE INTO settings (key, value) VALUES
-    ('shop_name',       'Borduurweelde'),
-    ('vat_number',      ''),
-    ('default_vat',     '6'),
-    ('update_url',      ''),
-    ('printer_name',    '');
+    ('shop_name',    'Borduurweelde'),
+    ('vat_number',   ''),
+    ('default_vat',  '6'),
+    ('update_url',   ''),
+    ('printer_name', '');
 
 -- Default categories
 INSERT OR IGNORE INTO categories (name, sort_order) VALUES
