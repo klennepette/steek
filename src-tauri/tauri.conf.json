@@ -26,29 +26,9 @@
     }
   },
   "bundle": {
-    "active": true,
-    "targets": ["nsis", "msi"],
-    "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
-    ],
-    "publisher": "Borduurweelde",
-    "copyright": "© 2025 Borduurweelde"
+    "active": false
   },
   "plugins": {
-    "updater": {
-      "pubkey": "",
-      "endpoints": [
-        "https://github.com/klennepette/steek/releases/download/latest/latest.json"
-      ],
-      "dialog": true,
-      "windows": {
-        "installMode": "passive"
-      }
-    },
     "sql": {
       "preloadConnections": ["sqlite:steek.db"]
     }

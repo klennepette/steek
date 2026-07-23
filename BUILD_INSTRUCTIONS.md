@@ -1,15 +1,35 @@
-# Building Steek for Windows
+# Building and Running Steek
 
-These instructions are for building the `.exe` installer on Windows.
+Steek is developed on Linux and runs as a Tauri app with source-code deployment. No binary builds.
 
 ## Prerequisites
 
-Ensure you have installed:
+### Linux
+```bash
+# Ubuntu/Debian
+sudo apt-get install curl wget libwebkit2gtk-4.1-dev libssl-dev libgtk-3-dev \
+  libayatana-appindicator3-dev librsvg2-dev
+
+# Fedora
+sudo dnf install openssl-devel webkit2gtk4.1-devel libappindicator-gtk3-devel \
+  librsvg2-devel
+
+# Arch
+sudo pacman -S webkit2gtk openssl gcc make
+```
+
+### macOS
+```bash
+# Xcode command-line tools
+xcode-select --install
+```
+
+### All platforms
 - **Node.js** (LTS): https://nodejs.org/
 - **Rust**: https://www.rust-lang.org/tools/install
-- **Git**: https://git-scm.com/download/win
+- **Git**: https://git-scm.com/
 
-Verify in a terminal:
+Verify:
 ```bash
 node --version
 npm --version
@@ -17,60 +37,69 @@ rustc --version
 git --version
 ```
 
-## Build Steps
+## Development (on Linux)
 
-1. **Clone or pull the latest code**
+### Clone the repo
+```bash
+git clone https://github.com/klennepette/steek.git
+cd steek
+```
+
+### Install and run
+```bash
+npm install
+npm run tauri dev
+```
+
+The app opens in a dev window. Edit source files, save → auto-reloads.
+
+## Deployment (source code)
+
+### For Windows/macOS users
+
+1. **Clone or update**
    ```bash
+   git clone https://github.com/klennepette/steek.git
    cd steek
-   git pull origin main
    ```
+   (or `git pull origin main` if already cloned)
 
-2. **Install dependencies** (first time only)
+2. **Install and run**
    ```bash
    npm install
+   npm run tauri dev
    ```
 
-3. **Build the application**
-   ```bash
-   npm run tauri build
-   ```
+### Auto-update (manual)
 
-   This will take 5–10 minutes on first build. Watch for any errors.
-
-## Output
-
-The built `.exe` installer will be at:
-```
-src-tauri/target/release/bundle/nsis/Steek_0.1.0_x64-setup.exe
+On Windows, run:
+```bash
+update.bat
 ```
 
-You can also find an MSI installer at:
+On Linux/macOS:
+```bash
+./update.sh
 ```
-src-tauri/target/release/bundle/msi/Steek_0.1.0_x64.msi
-```
 
-## Testing the Build
+This pulls the latest code and reinstalls dependencies.
 
-1. Run the installer (`.exe`)
-2. Install Steek to a folder
-3. Launch Steek from the Start menu
-4. Test the app (Kassa, Voorraad, etc.)
+## Creating a Release
 
-## Creating a GitHub Release
+1. Update version in `src-tauri/tauri.conf.json` and `package.json`
+2. Commit and push
+3. Create a GitHub release:
+   - Go to https://github.com/klennepette/steek/releases
+   - Click "Draft a new release"
+   - Tag: `v0.1.0` (matches version in config)
+   - Title: `v0.1.0 - Release notes here`
+   - Publish
 
-Once you've verified the build works:
-
-1. Go to https://github.com/klennepette/steek/releases
-2. Click **"Draft a new release"**
-3. Enter tag: `v0.1.0` (must match version in `tauri.conf.json`)
-4. Title: `v0.1.0 - First Release`
-5. Upload the `.exe` file from `src-tauri/target/release/bundle/nsis/`
-6. Publish
-
-The auto-updater will then fetch releases from this page.
+The release is now available as source code on GitHub.
 
 ## Troubleshooting
 
-- **Rust compiler errors**: Run `rustup update`
-- **Node errors**: Delete `node_modules/` and `package-lock.json`, then `npm install`
-- **Permission denied on Windows**: Run terminal as Administrator
+- **Rust errors**: `rustup update`
+- **Node errors**: `rm -rf node_modules package-lock.json && npm install`
+- **Webkit2 missing (Linux)**: Install development packages (see prerequisites)
+- **Port 1420 in use**: Kill the process or change port in `vite.config.js`
