@@ -27,15 +27,12 @@ $Shortcut = $Shell.CreateShortcut($ShortcutPath)
 
 # Configure shortcut
 $Shortcut.TargetPath = "cmd.exe"
-$Shortcut.Arguments = "/c `"$LauncherPath`""
+$Shortcut.Arguments = "/c ""$LauncherPath"""
 $Shortcut.WorkingDirectory = $SteekPath
 $Shortcut.WindowStyle = 1  # Normal window
 $Shortcut.Description = "Steek - Borduurweelde Inventory & POS"
 
-# Try to set icon (requires ImageMagick or custom .ico file)
-# For now, we'll try to use the SVG via a Windows shortcut
-# This requires converting SVG to ICO first
-
+# Try to set icon
 $IconPath = "$SteekPath\steek-logo.ico"
 if (Test-Path $IconPath) {
     $Shortcut.IconLocation = "$IconPath,0"
