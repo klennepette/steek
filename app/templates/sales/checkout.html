@@ -19,6 +19,7 @@
         hx-trigger="input changed delay:120ms"
         hx-target="#search-results"
         hx-vals="js:{q: document.getElementById('scanner-input').value}"
+        autofocus
       />
     </div>
     <p class="hint">Barcode of pakketcode → direct toevoegen &nbsp;|&nbsp; Naam → kies uit lijst &nbsp;|&nbsp; Enter bij 1 resultaat</p>
@@ -57,4 +58,24 @@
 </div>
 
 <script src="{{ url_for('static', filename='js/checkout.js') }}"></script>
+
+<script>
+  // Keep scanner input focused for continuous barcode scanning
+  const scannerInput = document.getElementById('scanner-input');
+  
+  // Focus on page load
+  scannerInput.focus();
+  
+  // Refocus after HTMX requests complete
+  document.addEventListener('htmx:afterRequest', () => {
+    scannerInput.focus();
+  });
+  
+  // Refocus if user clicks outside the input
+  document.addEventListener('click', (e) => {
+    if (e.target !== scannerInput) {
+      scannerInput.focus();
+    }
+  });
+</script>
 {% endblock %}
