@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <h2>{{ 'Product bewerken' if product else 'Nieuw product' }}</h2>
+  <a href="{{ url_for('products.index') }}" class="btn">← Terug</a>
+</div>
+
+<form method="post" class="form">
+  <div class="form-group">
+    <label for="name">Naam *</label>
+    <input id="name" type="text" name="name" value="{{ product.name if product else '' }}" required autofocus />
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="barcode">Barcode</label>
+      <input id="barcode" type="text" name="barcode" value="{{ product.barcode if product else '' }}" class="mono" placeholder="Scan of typ..." />
+    </div>
+    <div class="form-group">
+      <label for="packetcode">Pakketcode</label>
+      <input id="packetcode" type="text" name="packetcode" value="{{ product.packetcode if product else '' }}" class="mono" />
+    </div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="price">Prijs *</label>
+      <input id="price" type="number" name="price" step="0.01" min="0" value="{{ '%.2f'|format(product.price) if product else '0.00' }}" required />
+    </div>
+    <div class="form-group">
+      <label for="stock">Voorraad</label>
+      <input id="stock" type="number" name="stock" step="1" min="0" value="{{ product.stock if product else 0 }}" />
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label for="description">Beschrijving</label>
+    <textarea id="description" name="description" rows="2">{{ product.description if product else '' }}</textarea>
+  </div>
+
+  <div class="form-row form-checks">
+    <label class="checkbox">
+      <input type="checkbox" name="consignation" value="1" {{ 'checked' if product and product.consignation }} />
+      Consignatie
+    </label>
+    <label class="checkbox">
+      <input type="checkbox" name="active" value="1" {{ 'checked' if not product or product.active }} />
+      Actief
+    </label>
+  </div>
+
+  <div class="form-actions">
+    <a href="{{ url_for('products.index') }}" class="btn">Annuleer</a>
+    <button type="submit" class="btn btn-primary">Opslaan</button>
+  </div>
+</form>
+{% endblock %}

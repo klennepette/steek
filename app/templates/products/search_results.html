@@ -1,0 +1,28 @@
+{% if products %}
+  {% set exact = products[0] if products[0].barcode == query or products[0].packetcode == query else None %}
+  {% if exact and (exact.barcode == query or exact.packetcode == query) %}
+  <div id="exact-match" data-product-id="{{ exact.id }}" data-name="{{ exact.name }}" data-price="{{ exact.price }}"></div>
+  {% else %}
+  <ul class="search-dropdown">
+    {% for p in products %}
+    <li>
+      <button type="button" class="search-result-item"
+              data-product-id="{{ p.id }}"
+              data-name="{{ p.name }}"
+              data-price="{{ p.price }}">
+        <span class="result-name">{{ p.name }}</span>
+        <span class="result-meta">
+          {% if p.barcode %}<span class="mono">{{ p.barcode }}</span>{% endif %}
+          {% if p.packetcode %}<span class="mono">{{ p.packetcode }}</span>{% endif %}
+        </span>
+        <span class="result-price">€ {{ '%.2f'|format(p.price) }}</span>
+      </button>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+{% else %}
+<ul class="search-dropdown">
+  <li class="no-results">Geen producten gevonden.</li>
+</ul>
+{% endif %}

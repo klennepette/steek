@@ -1,0 +1,22 @@
+{% set labels = {'cash': 'Contant', 'payconiq': 'Payconiq', 'mixed': 'Gemengd'} %}
+<h3>Verkoop #{{ sale.id }}</h3>
+<p class="muted">{{ sale.created_at[:16] }} — {{ labels.get(sale.payment_method, sale.payment_method) }}</p>
+{% if sale.note %}<p>{{ sale.note }}</p>{% endif %}
+
+<table class="table mt-1">
+  <tbody>
+    {% for l in lines %}
+    <tr>
+      <td>{{ l.product_name }}</td>
+      <td class="text-center">× {{ l.quantity }}</td>
+      <td class="text-right">€ {{ '%.2f'|format(l.subtotal) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr class="total-row">
+      <td colspan="2" class="text-right"><strong>Totaal</strong></td>
+      <td class="text-right"><strong>€ {{ '%.2f'|format(sale.total) }}</strong></td>
+    </tr>
+  </tfoot>
+</table>

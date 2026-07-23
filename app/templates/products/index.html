@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <h2>Voorraad</h2>
+  <a href="{{ url_for('products.new') }}" class="btn btn-primary">+ Nieuw product</a>
+</div>
+
+<form class="search-bar" method="get">
+  <input type="search" name="q" value="{{ search }}" placeholder="Zoeken op naam, barcode of pakketcode..." autofocus />
+  <button type="submit" class="btn">Zoek</button>
+</form>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>Naam</th>
+      <th>Barcode</th>
+      <th>Pakketcode</th>
+      <th class="text-right">Prijs</th>
+      <th class="text-right">Voorraad</th>
+      <th class="text-center">Consig.</th>
+      <th class="text-center">Actief</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in products %}
+    <tr class="{{ 'inactive' if not p.active }}">
+      <td class="font-medium">{{ p.name }}</td>
+      <td class="mono muted">{{ p.barcode or '—' }}</td>
+      <td class="mono muted">{{ p.packetcode or '—' }}</td>
+      <td class="text-right">{{ '€ %.2f'|format(p.price) }}</td>
+      <td class="text-right {{ 'low-stock' if p.stock <= 2 }}">{{ p.stock }}</td>
+      <td class="text-center">{{ '✓' if p.consignation else '—' }}</td>
+      <td class="text-center">{{ '✓' if p.active else '✗' }}</td>
+      <td class="actions">
+        <a href="{{ url_for('products.edit', product_id=p.id) }}" class="btn btn-sm">Bewerk</a>
+        {% if p.active %}
+        <form method="post" action="{{ url_for('products.deactivate', product_id=p.id) }}" style="display:inline">
+          <button class="btn btn-sm btn-danger" onclick="return confirm('Product deactiveren?')">Deactiveer</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="8" class="empty">Geen producten gevonden.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

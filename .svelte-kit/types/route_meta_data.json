@@ -1,0 +1,18 @@
+{
+	"/": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.ts"
+	],
+	"/instellingen": [
+		"src/routes/+layout.ts"
+	],
+	"/kassa": [
+		"src/routes/+layout.ts"
+	],
+	"/verkopen": [
+		"src/routes/+layout.ts"
+	],
+	"/voorraad": [
+		"src/routes/+layout.ts"
+	]
+}

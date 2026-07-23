@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="confirmation">
+  <div class="confirmation-icon">✓</div>
+  <h2>Verkoop geregistreerd!</h2>
+  <p class="muted">Verkoop #{{ sale.id }} — {{ sale.created_at[:16] }}</p>
+
+  <table class="table mt-2">
+    <tbody>
+      {% for l in lines %}
+      <tr>
+        <td>{{ l.product_name }}</td>
+        <td class="text-center">× {{ l.quantity }}</td>
+        <td class="text-right">€ {{ '%.2f'|format(l.subtotal) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td colspan="2" class="text-right"><strong>Totaal</strong></td>
+        <td class="text-right"><strong>€ {{ '%.2f'|format(sale.total) }}</strong></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <a href="{{ url_for('sales.checkout') }}" class="btn btn-primary mt-2">Nieuwe verkoop</a>
+</div>
+{% endblock %}

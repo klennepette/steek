@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <h2>Verkopen</h2>
+  <form class="date-filter" method="get">
+    <label for="van">Van</label>
+    <input id="van" type="date" name="van" value="{{ from_date }}" />
+    <label for="tot">tot</label>
+    <input id="tot" type="date" name="tot" value="{{ to_date }}" />
+    <button type="submit" class="btn">Toon</button>
+  </form>
+</div>
+
+<div class="history-layout">
+  <div class="history-table">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Datum & tijd</th>
+          <th>Betaalmethode</th>
+          <th class="text-right">Totaal</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in sales %}
+        {% set labels = {'cash': 'Contant', 'payconiq': 'Payconiq', 'mixed': 'Gemengd'} %}
+        <tr class="clickable-row"
+            hx-get="{{ url_for('sales.sale_lines', sale_id=s.id) }}"
+            hx-target="#sale-detail"
+            hx-swap="innerHTML">
+          <td class="muted">{{ s.id }}</td>
+          <td>{{ s.created_at[:16] }}</td>
+          <td>{{ labels.get(s.payment_method, s.payment_method) }}</td>
+          <td class="text-right font-medium">€ {{ '%.2f'|format(s.total) }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="empty">Geen verkopen gevonden.</td></tr>
+        {% endfor %}
+      </tbody>
+      {% if sales %}
+      <tfoot>
+        <tr class="total-row">
+          <td colspan="3" class="text-right">Dagtotaal ({{ sales|length }} verkopen)</td>
+          <td class="text-right">€ {{ '%.2f'|format(day_total) }}</td>
+        </tr>
+      </tfoot>
+      {% endif %}
+    </table>
+  </div>
+
+  <div id="sale-detail" class="sale-detail">
+    <p class="muted hint">Klik op een verkoop voor details.</p>
+  </div>
+</div>
+{% endblock %}

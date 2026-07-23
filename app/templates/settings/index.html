@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <h2>Instellingen</h2>
+</div>
+
+<form method="post" class="form">
+  <section class="card">
+    <h3>Algemeen</h3>
+    <div class="form-group">
+      <label for="shop_name">Winkelnaam</label>
+      <input id="shop_name" type="text" name="shop_name" value="{{ settings.get('shop_name', '') }}" />
+    </div>
+    <div class="form-group">
+      <label for="printer_name">Printernaam</label>
+      <input id="printer_name" type="text" name="printer_name" value="{{ settings.get('printer_name', '') }}" />
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Opslaan</button>
+    </div>
+  </section>
+</form>
+
+<section class="card mt-2">
+  <h3>Updates</h3>
+  <p class="muted">Huidige versie: <strong>v{{ version }}</strong></p>
+  {% if update_available %}
+  <p class="update-notice">Er is een nieuwe versie beschikbaar!</p>
+  <p class="muted">Start de app opnieuw via <code>start.bat</code> om te updaten.</p>
+  {% else %}
+  <p class="muted">U hebt de nieuwste versie.</p>
+  {% endif %}
+</section>
+
+<section class="card mt-2">
+  <h3>Over</h3>
+  <p class="muted">Steek v{{ version }} — Borduurweelde, Turnhout</p>
+  <p class="muted">Database: <code>steek.db</code> (SQLite)</p>
+</section>
+{% endblock %}

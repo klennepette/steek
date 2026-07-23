@@ -1,0 +1,1 @@
+import"../chunks/Bzak7iHL.js";import{i as a}from"../chunks/WCcQgqSG.js";import{p,o as s,a as t}from"../chunks/D6YVsugE.js";import{g as r}from"../chunks/CjLqs119.js";function c(i,o){p(o,!1),s(()=>{r("/kassa")}),a(),t()}export{c as component};
