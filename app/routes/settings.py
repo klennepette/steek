@@ -1,5 +1,6 @@
-from flask import Blueprint, render_template, request, redirect, url_for, send_file
+from flask import Blueprint, render_template, request, redirect, url_for, send_file, flash
 from ..database import get_db
+from ..backup import upload_to_s3
 from pathlib import Path
 from datetime import datetime
 import shutil
@@ -8,17 +9,25 @@ import os
 
 bp = Blueprint("settings", __name__, url_prefix="/instellingen")
 
+_SETTING_KEYS = (
+    "shop_name", "printer_name",
+    "aws_access_key_id", "aws_secret_access_key",
+    "aws_bucket_name", "aws_region",
+    "backup_interval_minutes",
+)
+
 
 @bp.route("/", methods=["GET", "POST"])
 def index():
     with get_db() as conn:
         if request.method == "POST":
-            for key in ("shop_name", "printer_name"):
+            for key in _SETTING_KEYS:
                 value = request.form.get(key, "").strip()
                 conn.execute(
                     "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
                     (key, value),
                 )
+            flash("Instellingen opgeslagen.", "success")
             return redirect(url_for("settings.index"))
 
         rows = conn.execute("SELECT key, value FROM settings").fetchall()
@@ -73,5 +82,13 @@ def restore():
     
     # Save the uploaded file as the new database
     file.save(str(db_path))
-    
+
+    return redirect(url_for("settings.index"))
+
+
+@bp.route("/backup-s3", methods=["POST"])
+def backup_s3():
+    """Trigger an S3 backup manually."""
+    success, message = upload_to_s3()
+    flash(message, "success" if success else "error")
     return redirect(url_for("settings.index"))

@@ -15,6 +15,36 @@
       <label for="printer_name">Printernaam</label>
       <input id="printer_name" type="text" name="printer_name" value="{{ settings.get('printer_name', '') }}" />
     </div>
+  </section>
+
+  <section class="card mt-2">
+    <h3>AWS S3 Backup</h3>
+    <p class="muted">
+      Configureer automatische database-backups naar Amazon S3.
+      De IAM gebruiker heeft <code>s3:PutObject</code> nodig op <code>backups/*</code>.
+    </p>
+    <div class="form-group">
+      <label for="aws_access_key_id">Access Key ID</label>
+      <input id="aws_access_key_id" type="text" name="aws_access_key_id" value="{{ settings.get('aws_access_key_id', '') }}" class="mono" autocomplete="off" />
+    </div>
+    <div class="form-group">
+      <label for="aws_secret_access_key">Secret Access Key</label>
+      <input id="aws_secret_access_key" type="password" name="aws_secret_access_key" value="{{ settings.get('aws_secret_access_key', '') }}" class="mono" autocomplete="off" />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="aws_bucket_name">Bucket naam</label>
+        <input id="aws_bucket_name" type="text" name="aws_bucket_name" value="{{ settings.get('aws_bucket_name', '') }}" class="mono" placeholder="mijn-bucket" />
+      </div>
+      <div class="form-group">
+        <label for="aws_region">Regio</label>
+      <input id="aws_region" type="text" name="aws_region" value="{{ settings.get('aws_region', 'eu-west-1') }}" class="mono" placeholder="eu-west-1" />
+    </div>
+    <div class="form-group">
+      <label for="backup_interval_minutes">Backup interval (minuten)</label>
+      <input id="backup_interval_minutes" type="number" name="backup_interval_minutes" min="1" value="{{ settings.get('backup_interval_minutes', '60') }}" />
+      <p class="hint" style="margin-top: 4px;">Automatische S3 backup om de zoveel minuten. Back-up gebeurt ook bij het opstarten.</p>
+    </div>
     <div class="form-actions">
       <button type="submit" class="btn btn-primary">Opslaan</button>
     </div>
@@ -61,6 +91,22 @@
       <button type="button" class="btn" onclick="document.getElementById('restore-form').style.display = 'none'">Annuleren</button>
     </div>
   </form>
+
+  {% if settings.get('aws_bucket_name') %}
+  <hr style="margin: 16px 0; border: none; border-top: 1px solid var(--border);" />
+  <p class="muted">S3 backup naar <strong>{{ settings.get('aws_bucket_name') }}</strong></p>
+  {% if settings.get('aws_last_backup') %}
+  <p class="muted">Laatste backup: {{ settings.get('aws_last_backup_result') }}</p>
+  {% endif %}
+  <form method="post" action="{{ url_for('settings.backup_s3') }}" style="margin-top: 8px;">
+    <button type="submit" class="btn btn-primary">
+      <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+      </svg>
+      Backup nu naar S3
+    </button>
+  </form>
+  {% endif %}
 </section>
 
 <section class="card mt-2">

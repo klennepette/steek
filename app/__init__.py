@@ -13,4 +13,7 @@ def create_app():
     app.register_blueprint(sales.bp)
     app.register_blueprint(settings.bp)
 
+    from .backup import start_scheduler
+    start_scheduler()
+
     return app

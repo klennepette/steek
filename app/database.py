@@ -59,6 +59,7 @@ def init_db():
             );
 
             INSERT OR IGNORE INTO settings (key, value) VALUES
-                ('shop_name',    'Borduurweelde'),
-                ('printer_name', '');
+                ('shop_name',              'Borduurweelde'),
+                ('printer_name',           ''),
+                ('backup_interval_minutes', '60');
         """)

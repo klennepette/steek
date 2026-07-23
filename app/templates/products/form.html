@@ -8,7 +8,8 @@
 <form method="post" class="form">
   <div class="form-group">
     <label for="name">Naam *</label>
-    <input id="name" type="text" name="name" value="{{ product.name if product else '' }}" required autofocus />
+    <input id="name" type="text" name="name" value="{{ product.name if product else '' }}" required autofocus
+      oninvalid="this.setCustomValidity('Naam is verplicht.')" oninput="this.setCustomValidity('')" />
   </div>
 
   <div class="form-row">
@@ -25,7 +26,8 @@
   <div class="form-row">
     <div class="form-group">
       <label for="price">Prijs *</label>
-      <input id="price" type="number" name="price" step="0.01" min="0" value="{{ '%.2f'|format(product.price) if product else '0.00' }}" required />
+      <input id="price" type="number" name="price" step="0.01" min="0" value="{{ '%.2f'|format(product.price) if product else '0.00' }}" required
+        oninvalid="this.setCustomValidity('Prijs is verplicht en moet een getal zijn.')" oninput="this.setCustomValidity('')" />
     </div>
     <div class="form-group">
       <label for="stock">Voorraad</label>
@@ -54,4 +56,8 @@
     <button type="submit" class="btn btn-primary">Opslaan</button>
   </div>
 </form>
+
+<style>
+.form-group input:invalid:not(:focus) { border-color: var(--danger); }
+</style>
 {% endblock %}
