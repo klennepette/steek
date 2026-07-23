@@ -14,8 +14,8 @@ if (-not (Test-Path "$SteekPath\package.json")) {
     exit 1
 }
 
-# Launcher script path
-$LauncherPath = "$SteekPath\steek-launcher.bat"
+# Launcher script path (use production launcher for faster startup)
+$LauncherPath = "$SteekPath\steek-launcher-prod.bat"
 
 # Desktop path
 $DesktopPath = [Environment]::GetFolderPath("Desktop")
