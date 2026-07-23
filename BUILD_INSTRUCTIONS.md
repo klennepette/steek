@@ -49,12 +49,30 @@ cd steek
 npm install
 ```
 
-### Run in development mode
+### Run in web-only mode (Recommended for Linux)
+
+**Linux:**
+```bash
+./steek-dev.sh
+```
+
+Or manually:
+```bash
+npm run build
+npm run preview
+```
+
+This builds the frontend and runs a preview server at `http://localhost:4173`. No Rust/Tauri compilation needed.
+
+### Run in Tauri dev mode (if you have Rust installed)
+
 ```bash
 npm run tauri dev
 ```
 
-The app opens in a window. Edit source files in `src/` and they'll reload automatically (hot reload).
+This opens a native desktop window with hot reload. Requires WebKit2GTK libraries (see Prerequisites).
+
+The app runs on `http://localhost:1420`.
 
 ## Running on Windows
 
@@ -89,16 +107,19 @@ This creates a "Steek" shortcut on your Desktop (uses production launcher).
 
 ## Scripts
 
-### Development
+### Development (Linux/macOS)
 ```bash
-npm run tauri dev          # Start dev server with hot reload
+./steek-dev.sh             # Run web-only mode (recommended)
 npm run build              # Build frontend only
+npm run preview            # Run preview server manually
+npm run tauri dev          # Run Tauri dev mode (requires Rust)
 ```
 
-### Production
+### Production (Windows)
 ```bash
+steek-launcher-prod.bat    # Windows production launcher
 npm run build              # Pre-build frontend
-npm run serve              # Run preview server
+npm run tauri dev          # Run Tauri app
 ```
 
 ### Other
@@ -151,8 +172,12 @@ npm run tauri dev
 
 ## Troubleshooting
 
-### Linux: WebKit2 Library Not Found
-Install development packages for your distribution (see Prerequisites above).
+### Linux/macOS: Use web-only mode instead
+If WebKit2GTK installation is problematic, just use web-only mode:
+```bash
+./steek-dev.sh
+```
+This avoids compiling Tauri/Rust entirely and runs at `http://localhost:4173`.
 
 ### Windows: "cargo" not found
 Rust is not installed or PATH wasn't updated:
