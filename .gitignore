@@ -1,6 +1,11 @@
 # Database
 steek.db
 
+# SvelteKit leftovers (old branch artifacts)
+.svelte-kit/
+build/
+node_modules/
+
 # Python
 .venv/
 __pycache__/
