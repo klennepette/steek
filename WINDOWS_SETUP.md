@@ -55,9 +55,21 @@ To convert the SVG logo to Windows .ico format:
 
 ## Launching Steek
 
+### Standard Launch (Development Mode)
 1. **Double-click the "Steek" shortcut on your Desktop**
-2. A terminal will open and dependencies will install (first time only)
-3. The Steek app window opens automatically
+2. A terminal opens and dependencies install (first time only)
+3. The app launches with the Tauri dev server
+4. Browser opens to http://localhost:1420
+
+### Production Mode (Optional)
+For a faster, more stable launch without dev server overhead:
+
+1. In the Steek folder, double-click `steek-launcher-prod.bat`
+2. First run will build the frontend, then launch
+3. Subsequent runs start instantly
+4. Browser opens automatically
+
+**Recommendation:** Use the standard launcher for development. Use production launcher for daily use after initial setup.
 
 ## Updates
 

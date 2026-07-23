@@ -13,6 +13,7 @@ if not exist package.json (
     exit /b 1
 )
 
+echo.
 echo Starting Steek...
 echo.
 
@@ -27,11 +28,23 @@ if not exist node_modules (
     )
 )
 
-REM Launch the app
-call npm run tauri dev
+REM Optional: Check for updates
+REM Uncomment the line below to auto-update on launch
+REM call npm run update-check
 
-if errorlevel 1 (
-    echo Error: Failed to start Steek
-    pause
-    exit /b 1
-)
+REM Start Tauri dev server in background
+echo Launching Steek app...
+echo.
+
+REM Start the dev server and get its PID
+start "Steek Dev Server" npm run tauri dev
+
+REM Wait a few seconds for the app to start
+timeout /t 3 /nobreak
+
+REM Open browser to localhost:1420
+REM Note: The app will open its own window, this is just a fallback
+start http://localhost:1420
+
+REM Keep this window open
+pause
