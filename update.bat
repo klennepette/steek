@@ -1,5 +1,5 @@
 @echo off
-echo Steek bijwerken via Bitbucket...
+echo Steek bijwerken via GitHub...
 git pull
 if %errorlevel% neq 0 (
     echo Fout bij git pull. Controleer uw internetverbinding.

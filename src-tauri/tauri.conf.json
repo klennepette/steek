@@ -42,7 +42,7 @@
     "updater": {
       "pubkey": "",
       "endpoints": [
-        "https://bitbucket.org/p_heylen/steek/raw/HEAD/releases/latest.json"
+        "https://github.com/klennepette/steek/releases/download/latest/latest.json"
       ],
       "dialog": true,
       "windows": {
