@@ -1,41 +1,29 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import {
-    getProducts,
-    getCategories,
-    upsertProduct,
-    deactivateProduct,
-    type Product,
-    type Category,
-  } from "$lib/db";
+  import { getProducts, upsertProduct, deactivateProduct, type Product } from "$lib/db";
 
   let products: Product[] = [];
-  let categories: Category[] = [];
   let searchTerm = "";
-  let selectedCategory = 0;
-  let form: Omit<Product, "id" | "category_name"> & { id?: number } = emptyForm();
+  let form: Omit<Product, "id"> & { id?: number } = emptyForm();
   let showForm = false;
   let saving = false;
 
   $: filtered = products.filter((p) => {
     const term = searchTerm.toLowerCase();
-    const matchSearch =
+    return (
       p.name.toLowerCase().includes(term) ||
       (p.barcode ?? "").toLowerCase().includes(term) ||
-      (p.packetcode ?? "").toLowerCase().includes(term);
-    const matchCategory = selectedCategory === 0 || p.category_id === selectedCategory;
-    return matchSearch && matchCategory;
+      (p.packetcode ?? "").toLowerCase().includes(term)
+    );
   });
 
-  function emptyForm(): Omit<Product, "id" | "category_name"> & { id?: number } {
+  function emptyForm(): Omit<Product, "id"> & { id?: number } {
     return {
       name: "",
       barcode: null,
       packetcode: null,
       description: null,
-      category_id: null,
       price: 0,
-      vat_pct: 6,
       stock: 0,
       consignation: 0,
       active: 1,
@@ -43,7 +31,7 @@
   }
 
   onMount(async () => {
-    [products, categories] = await Promise.all([getProducts(false), getCategories()]);
+    products = await getProducts(false);
   });
 
   function newProduct() {
@@ -89,16 +77,6 @@
       class="border border-input rounded-md px-3 py-1.5 text-sm bg-background w-72 focus:outline-none focus:ring-2 focus:ring-ring"
     />
 
-    <select
-      bind:value={selectedCategory}
-      class="border border-input rounded-md px-3 py-1.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-    >
-      <option value={0}>Alle categorieën</option>
-      {#each categories as cat}
-        <option value={cat.id}>{cat.name}</option>
-      {/each}
-    </select>
-
     <button
       class="ml-auto bg-primary text-primary-foreground rounded-md px-4 py-1.5 text-sm font-medium hover:opacity-90"
       onclick={newProduct}
@@ -115,9 +93,7 @@
           <th class="text-left px-4 py-2 font-medium">Naam</th>
           <th class="text-left px-4 py-2 font-medium">Barcode</th>
           <th class="text-left px-4 py-2 font-medium">Pakketcode</th>
-          <th class="text-left px-4 py-2 font-medium">Categorie</th>
           <th class="text-right px-4 py-2 font-medium">Prijs</th>
-          <th class="text-right px-4 py-2 font-medium">BTW</th>
           <th class="text-right px-4 py-2 font-medium">Voorraad</th>
           <th class="text-center px-4 py-2 font-medium">Consig.</th>
           <th class="text-center px-4 py-2 font-medium">Actief</th>
@@ -130,9 +106,7 @@
             <td class="px-4 py-2 font-medium">{product.name}</td>
             <td class="px-4 py-2 text-muted-foreground font-mono text-xs">{product.barcode ?? "—"}</td>
             <td class="px-4 py-2 text-muted-foreground font-mono text-xs">{product.packetcode ?? "—"}</td>
-            <td class="px-4 py-2 text-muted-foreground">{product.category_name ?? "—"}</td>
             <td class="px-4 py-2 text-right">{formatPrice(product.price)}</td>
-            <td class="px-4 py-2 text-right">{product.vat_pct}%</td>
             <td class="px-4 py-2 text-right {product.stock <= 2 ? 'text-destructive font-semibold' : ''}">{product.stock}</td>
             <td class="px-4 py-2 text-center">{product.consignation ? "✓" : "—"}</td>
             <td class="px-4 py-2 text-center">{product.active ? "✓" : "✗"}</td>
@@ -146,7 +120,7 @@
         {/each}
         {#if filtered.length === 0}
           <tr>
-            <td colspan="10" class="px-4 py-8 text-center text-muted-foreground">Geen producten gevonden.</td>
+            <td colspan="8" class="px-4 py-8 text-center text-muted-foreground">Geen producten gevonden.</td>
           </tr>
         {/if}
       </tbody>
@@ -159,7 +133,7 @@
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onclick={() => (showForm = false)}>
     <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-    <div class="bg-background border border-border rounded-xl shadow-xl w-full max-w-lg p-6" onclick={(e) => e.stopPropagation()}>
+    <div class="bg-background border border-border rounded-xl shadow-xl w-full max-w-md p-6" onclick={(e) => e.stopPropagation()}>
       <h3 class="text-lg font-semibold mb-4">{form.id ? "Product bewerken" : "Nieuw product"}</h3>
 
       <div class="flex flex-col gap-3 text-sm">
@@ -179,24 +153,10 @@
           </label>
         </div>
 
-        <label class="flex flex-col gap-1">
-          Categorie
-          <select bind:value={form.category_id} class="border border-input rounded-md px-3 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring">
-            <option value={null}>— geen —</option>
-            {#each categories as cat}
-              <option value={cat.id}>{cat.name}</option>
-            {/each}
-          </select>
-        </label>
-
-        <div class="grid grid-cols-3 gap-3">
+        <div class="grid grid-cols-2 gap-3">
           <label class="flex flex-col gap-1">
-            Prijs (incl. BTW) *
+            Prijs *
             <input type="number" step="0.01" min="0" bind:value={form.price} class="border border-input rounded-md px-3 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-          </label>
-          <label class="flex flex-col gap-1">
-            BTW %
-            <input type="number" step="1" min="0" bind:value={form.vat_pct} class="border border-input rounded-md px-3 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
           </label>
           <label class="flex flex-col gap-1">
             Voorraad

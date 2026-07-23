@@ -12,7 +12,7 @@
     return new Date().toISOString().slice(0, 10);
   }
 
-  $: dayTotal = sales.reduce((sum, s) => sum + s.total_incl, 0);
+  $: dayTotal = sales.reduce((sum, s) => sum + s.total, 0);
 
   onMount(() => loadSales());
 
@@ -61,8 +61,6 @@
             <th class="text-left px-4 py-2 font-medium">#</th>
             <th class="text-left px-4 py-2 font-medium">Datum & tijd</th>
             <th class="text-left px-4 py-2 font-medium">Betaalmethode</th>
-            <th class="text-right px-4 py-2 font-medium">Excl. BTW</th>
-            <th class="text-right px-4 py-2 font-medium">BTW</th>
             <th class="text-right px-4 py-2 font-medium">Totaal</th>
           </tr>
         </thead>
@@ -75,21 +73,19 @@
               <td class="px-4 py-2 text-muted-foreground">{sale.id}</td>
               <td class="px-4 py-2">{formatDate(sale.created_at)}</td>
               <td class="px-4 py-2">{paymentLabels[sale.payment_method] ?? sale.payment_method}</td>
-              <td class="px-4 py-2 text-right">{formatPrice(sale.total_excl)}</td>
-              <td class="px-4 py-2 text-right">{formatPrice(sale.total_vat)}</td>
-              <td class="px-4 py-2 text-right font-medium">{formatPrice(sale.total_incl)}</td>
+              <td class="px-4 py-2 text-right font-medium">{formatPrice(sale.total)}</td>
             </tr>
           {/each}
           {#if sales.length === 0}
             <tr>
-              <td colspan="6" class="px-4 py-8 text-center text-muted-foreground">Geen verkopen gevonden.</td>
+              <td colspan="4" class="px-4 py-8 text-center text-muted-foreground">Geen verkopen gevonden.</td>
             </tr>
           {/if}
         </tbody>
         {#if sales.length > 0}
           <tfoot class="bg-muted font-semibold">
             <tr class="border-t-2 border-border">
-              <td colspan="5" class="px-4 py-2 text-right">Dagtotaal ({sales.length} verkopen)</td>
+              <td colspan="3" class="px-4 py-2 text-right">Dagtotaal ({sales.length} verkopen)</td>
               <td class="px-4 py-2 text-right">{formatPrice(dayTotal)}</td>
             </tr>
           </tfoot>
@@ -100,7 +96,7 @@
 
   <!-- Detail panel -->
   {#if selected}
-    <div class="w-72 border border-border rounded-lg bg-card p-4 flex flex-col gap-3 shrink-0 h-fit">
+    <div class="w-64 border border-border rounded-lg bg-card p-4 flex flex-col gap-3 shrink-0 h-fit">
       <h3 class="font-semibold">Verkoop #{selected.id}</h3>
       <p class="text-xs text-muted-foreground">{formatDate(selected.created_at)}</p>
       <p class="text-sm">{paymentLabels[selected.payment_method] ?? selected.payment_method}</p>
@@ -117,19 +113,9 @@
         {/each}
       </div>
 
-      <div class="border-t border-border pt-3 flex flex-col gap-1 text-sm">
-        <div class="flex justify-between">
-          <span class="text-muted-foreground">Excl. BTW</span>
-          <span>{formatPrice(selected.total_excl)}</span>
-        </div>
-        <div class="flex justify-between">
-          <span class="text-muted-foreground">BTW</span>
-          <span>{formatPrice(selected.total_vat)}</span>
-        </div>
-        <div class="flex justify-between font-semibold">
-          <span>Totaal</span>
-          <span>{formatPrice(selected.total_incl)}</span>
-        </div>
+      <div class="border-t border-border pt-3 flex justify-between font-semibold text-sm">
+        <span>Totaal</span>
+        <span>{formatPrice(selected.total)}</span>
       </div>
     </div>
   {/if}

@@ -43,10 +43,8 @@
   }
 
   const fields = [
-    { key: "shop_name",   label: "Winkelnaam",     type: "text" },
-    { key: "vat_number",  label: "BTW-nummer",     type: "text" },
-    { key: "default_vat", label: "Standaard BTW %", type: "number" },
-    { key: "printer_name",label: "Printernaam",    type: "text" },
+    { key: "shop_name",    label: "Winkelnaam",  type: "text" },
+    { key: "printer_name", label: "Printernaam", type: "text" },
   ];
 </script>
 

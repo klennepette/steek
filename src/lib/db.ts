@@ -11,22 +11,13 @@ export async function getDb(): Promise<Database> {
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export interface Category {
-  id: number;
-  name: string;
-  sort_order: number;
-}
-
 export interface Product {
   id: number;
   name: string;
   barcode: string | null;
   packetcode: string | null;
   description: string | null;
-  category_id: number | null;
-  category_name?: string;
   price: number;
-  vat_pct: number;
   stock: number;
   consignation: number; // boolean: 1 = consignment stock
   active: number;       // boolean: 1 = active
@@ -35,9 +26,7 @@ export interface Product {
 export interface Sale {
   id: number;
   created_at: string;
-  total_excl: number;
-  total_vat: number;
-  total_incl: number;
+  total: number;
   payment_method: string;
   note: string | null;
 }
@@ -49,7 +38,6 @@ export interface SaleLine {
   product_name: string;
   quantity: number;
   unit_price: number;
-  vat_pct: number;
   subtotal: number;
 }
 
@@ -58,75 +46,56 @@ export interface Setting {
   value: string | null;
 }
 
-// ── Categories ───────────────────────────────────────────────────────────────
-
-export async function getCategories(): Promise<Category[]> {
-  const db = await getDb();
-  return db.select<Category[]>("SELECT * FROM categories ORDER BY sort_order, name");
-}
-
 // ── Products ─────────────────────────────────────────────────────────────────
 
 export async function getProducts(activeOnly = true): Promise<Product[]> {
   const db = await getDb();
-  const filter = activeOnly ? "WHERE p.active = 1" : "";
-  return db.select<Product[]>(`
-    SELECT p.*, c.name AS category_name
-    FROM products p
-    LEFT JOIN categories c ON c.id = p.category_id
-    ${filter}
-    ORDER BY c.sort_order, p.name
-  `);
+  const filter = activeOnly ? "WHERE active = 1" : "";
+  return db.select<Product[]>(
+    `SELECT * FROM products ${filter} ORDER BY name`
+  );
 }
 
 /**
  * Search products by barcode, packetcode, or name (case-insensitive).
- * Used by the checkout scanner input.
+ * Results are ordered: exact barcode match first, then packetcode, then name.
  */
 export async function searchProducts(query: string): Promise<Product[]> {
   const db = await getDb();
   return db.select<Product[]>(
-    `SELECT p.*, c.name AS category_name
-     FROM products p
-     LEFT JOIN categories c ON c.id = p.category_id
-     WHERE p.active = 1
-       AND (p.barcode = ?1 OR p.packetcode = ?1 OR p.name LIKE ?2)
+    `SELECT * FROM products
+     WHERE active = 1
+       AND (barcode = ?1 OR packetcode = ?1 OR name LIKE ?2)
      ORDER BY
-       CASE WHEN p.barcode = ?1 THEN 0
-            WHEN p.packetcode = ?1 THEN 1
+       CASE WHEN barcode    = ?1 THEN 0
+            WHEN packetcode = ?1 THEN 1
             ELSE 2 END,
-       p.name
+       name
      LIMIT 20`,
     [query, `%${query}%`]
   );
 }
 
 export async function upsertProduct(
-  p: Omit<Product, "id" | "category_name"> & { id?: number }
+  p: Omit<Product, "id"> & { id?: number }
 ): Promise<void> {
   const db = await getDb();
   if (p.id) {
     await db.execute(
       `UPDATE products
-       SET name=?, barcode=?, packetcode=?, description=?, category_id=?,
-           price=?, vat_pct=?, stock=?, consignation=?, active=?,
+       SET name=?, barcode=?, packetcode=?, description=?,
+           price=?, stock=?, consignation=?, active=?,
            updated_at=datetime('now')
        WHERE id=?`,
-      [
-        p.name, p.barcode, p.packetcode, p.description, p.category_id,
-        p.price, p.vat_pct, p.stock, p.consignation, p.active,
-        p.id,
-      ]
+      [p.name, p.barcode, p.packetcode, p.description,
+       p.price, p.stock, p.consignation, p.active, p.id]
     );
   } else {
     await db.execute(
-      `INSERT INTO products
-         (name, barcode, packetcode, description, category_id, price, vat_pct, stock, consignation, active)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        p.name, p.barcode, p.packetcode, p.description, p.category_id,
-        p.price, p.vat_pct, p.stock, p.consignation ?? 0, p.active ?? 1,
-      ]
+      `INSERT INTO products (name, barcode, packetcode, description, price, stock, consignation, active)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [p.name, p.barcode, p.packetcode, p.description,
+       p.price, p.stock, p.consignation ?? 0, p.active ?? 1]
     );
   }
 }
@@ -154,24 +123,17 @@ export interface NewSale {
     product_name: string;
     quantity: number;
     unit_price: number;
-    vat_pct: number;
   }[];
 }
 
 export async function recordSale(sale: NewSale): Promise<number> {
   const db = await getDb();
 
-  const total_incl = sale.lines.reduce((s, l) => s + l.quantity * l.unit_price, 0);
-  const total_excl = sale.lines.reduce((s, l) => {
-    const excl = l.unit_price / (1 + l.vat_pct / 100);
-    return s + l.quantity * excl;
-  }, 0);
-  const total_vat = total_incl - total_excl;
+  const total = sale.lines.reduce((s, l) => s + l.quantity * l.unit_price, 0);
 
   const result = await db.execute(
-    `INSERT INTO sales (total_excl, total_vat, total_incl, payment_method, note)
-     VALUES (?, ?, ?, ?, ?)`,
-    [total_excl, total_vat, total_incl, sale.payment_method, sale.note ?? null]
+    `INSERT INTO sales (total, payment_method, note) VALUES (?, ?, ?)`,
+    [total, sale.payment_method, sale.note ?? null]
   );
 
   const saleId = result.lastInsertId as number;
@@ -179,9 +141,9 @@ export async function recordSale(sale: NewSale): Promise<number> {
   for (const l of sale.lines) {
     const subtotal = l.quantity * l.unit_price;
     await db.execute(
-      `INSERT INTO sale_lines (sale_id, product_id, product_name, quantity, unit_price, vat_pct, subtotal)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [saleId, l.product_id, l.product_name, l.quantity, l.unit_price, l.vat_pct, subtotal]
+      `INSERT INTO sale_lines (sale_id, product_id, product_name, quantity, unit_price, subtotal)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [saleId, l.product_id, l.product_name, l.quantity, l.unit_price, subtotal]
     );
     if (l.product_id) {
       await db.execute(
