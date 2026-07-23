@@ -5,12 +5,12 @@ param(
     [string]$SteekPath = (Split-Path -Parent $MyInvocation.MyCommand.Path)
 )
 
-Write-Host "Creating Steek desktop shortcut..." -ForegroundColor Green
+Write-Host "Creating Steek desktop shortcut..."
 
 # Validate that Steek installation exists
 if (-not (Test-Path "$SteekPath\package.json")) {
-    Write-Host "Error: Could not find Steek installation at $SteekPath" -ForegroundColor Red
-    Write-Host "Usage: .\create-shortcut.ps1 -SteekPath C:\path\to\steek" -ForegroundColor Yellow
+    Write-Host "Error: Could not find Steek installation at $SteekPath"
+    Write-Host "Usage: .\create-shortcut.ps1 -SteekPath C:\path\to\steek"
     exit 1
 }
 
@@ -29,24 +29,24 @@ $Shortcut = $Shell.CreateShortcut($ShortcutPath)
 $Shortcut.TargetPath = "cmd.exe"
 $Shortcut.Arguments = "/c ""$LauncherPath"""
 $Shortcut.WorkingDirectory = $SteekPath
-$Shortcut.WindowStyle = 1  # Normal window
+$Shortcut.WindowStyle = 1
 $Shortcut.Description = "Steek - Borduurweelde Inventory & POS"
 
 # Try to set icon
 $IconPath = "$SteekPath\steek-logo.ico"
 if (Test-Path $IconPath) {
     $Shortcut.IconLocation = "$IconPath,0"
-    Write-Host "Icon set from: $IconPath" -ForegroundColor Cyan
+    Write-Host "Icon set from: $IconPath"
 } else {
-    Write-Host "Note: Icon file not found at $IconPath" -ForegroundColor Yellow
-    Write-Host "To add a custom icon, convert steek-logo.svg to .ico format" -ForegroundColor Yellow
+    Write-Host "Note: Icon file not found at $IconPath"
+    Write-Host "To add a custom icon, convert steek-logo.svg to .ico format"
 }
 
 # Save shortcut
 $Shortcut.Save()
 
-Write-Host "✓ Shortcut created: $ShortcutPath" -ForegroundColor Green
-Write-Host "You can now launch Steek from your desktop!" -ForegroundColor Green
+Write-Host "Shortcut created: $ShortcutPath"
+Write-Host "You can now launch Steek from your desktop!"
 
 # Open Desktop folder to show the shortcut
 explorer $DesktopPath
