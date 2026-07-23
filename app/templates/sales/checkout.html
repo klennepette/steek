@@ -2,8 +2,7 @@
 {% block content %}
 <div class="checkout-layout">
 
-  <!-- Left: scanner -->
-  <div class="checkout-left">
+  <div class="checkout-top">
     <h2>Kassa</h2>
 
     <div class="scanner-bar">
@@ -27,8 +26,8 @@
     <div id="search-results"></div>
   </div>
 
-  <!-- Right: cart -->
-  <div class="checkout-right">
+  <!-- Bottom: cart -->
+  <div class="checkout-bottom">
     <h2>Winkelmandje</h2>
 
     <form method="post" action="{{ url_for('sales.record') }}" id="cart-form">

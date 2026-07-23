@@ -62,10 +62,10 @@ def search():
         rows = conn.execute(
             """SELECT * FROM products
                WHERE active = 1
-                 AND (barcode = ?1 OR packetcode = ?1 OR name LIKE ?2)
+                 AND (barcode = ?1 OR packetcode LIKE ?2 OR name LIKE ?2)
                ORDER BY
                  CASE WHEN barcode = ?1    THEN 0
-                      WHEN packetcode = ?1 THEN 1
+                      WHEN packetcode LIKE ?2 THEN 1
                       ELSE 2 END,
                  name
                LIMIT 20""",
