@@ -111,6 +111,16 @@ body {
 
 .page-header h2 { font-size: 20px; font-weight: 600; }
 
+.export-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.export-buttons .btn {
+  gap: 4px;
+  font-size: 13px;
+}
+
 /* ── Buttons ──────────────────────────────────────────────────────────────── */
 .btn {
   display: inline-flex;
@@ -180,6 +190,7 @@ body {
 .form-row    { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .form-checks { display: flex; gap: 24px; align-items: center; margin-bottom: 14px; }
 .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+.button-group { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .form-group label { font-size: 13px; font-weight: 500; color: var(--muted); }
 .form-group input,
@@ -190,6 +201,10 @@ body {
   border-radius: var(--radius);
   font-size: 14px;
   background: var(--surface);
+}
+.form-group input[type="file"] {
+  padding: 6px 0;
+  cursor: pointer;
 }
 .form-group input:focus,
 .form-group textarea:focus {

@@ -1,6 +1,9 @@
-from flask import Blueprint, render_template, request, redirect, url_for, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, jsonify, send_file
 from ..database import get_db
 from datetime import date
+from io import BytesIO
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment
 
 bp = Blueprint("sales", __name__, url_prefix="/kassa")
 
@@ -103,3 +106,80 @@ def sale_lines(sale_id):
             "SELECT * FROM sale_lines WHERE sale_id = ?", (sale_id,)
         ).fetchall()
     return render_template("sales/lines_partial.html", sale=sale, lines=lines)
+
+
+@bp.route("/export/xlsx")
+def export_xlsx():
+    """Export sales to Excel file."""
+    from_date = request.args.get("van", date.today().isoformat())
+    to_date = request.args.get("tot", date.today().isoformat())
+    
+    with get_db() as conn:
+        sales = conn.execute(
+            """SELECT * FROM sales
+               WHERE date(created_at) BETWEEN ? AND ?
+               ORDER BY created_at DESC""",
+            (from_date, to_date),
+        ).fetchall()
+    
+    # Create workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Verkopen"
+    
+    # Headers
+    headers = ["ID", "Datum & tijd", "Betaalmethode", "Totaal"]
+    ws.append(headers)
+    
+    # Style headers
+    header_fill = PatternFill(start_color="8B4789", end_color="8B4789", fill_type="solid")
+    header_font = Font(color="FFFFFF", bold=True)
+    for cell in ws[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+    
+    # Payment method labels
+    labels = {'cash': 'Contant', 'payconiq': 'Payconiq', 'mixed': 'Gemengd'}
+    
+    # Add data
+    for sale in sales:
+        ws.append([
+            sale['id'],
+            sale['created_at'][:16],
+            labels.get(sale['payment_method'], sale['payment_method']),
+            sale['total'],
+        ])
+    
+    # Format columns
+    ws.column_dimensions['A'].width = 8
+    ws.column_dimensions['B'].width = 18
+    ws.column_dimensions['C'].width = 15
+    ws.column_dimensions['D'].width = 12
+    
+    # Right-align totals
+    for row in ws.iter_rows(min_row=2, max_row=len(sales) + 1, min_col=4, max_col=4):
+        for cell in row:
+            cell.alignment = Alignment(horizontal="right")
+            cell.number_format = '€ #,##0.00'
+    
+    # Add totals row
+    if sales:
+        day_total = sum(s['total'] for s in sales)
+        ws.append(["", "", f"Totaal ({len(sales)} verkopen)", day_total])
+        
+        # Style total row
+        last_row = ws.max_row
+        for cell in ws[last_row]:
+            cell.font = Font(bold=True)
+            if cell.column == 4:
+                cell.alignment = Alignment(horizontal="right")
+                cell.number_format = '€ #,##0.00'
+    
+    # Save to bytes
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    filename = f"verkopen_{from_date}_tot_{to_date}.xlsx"
+    return send_file(output, as_attachment=True, download_name=filename, mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
